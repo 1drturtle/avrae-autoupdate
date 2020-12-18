@@ -1,0 +1,20 @@
+name: 'Action Name'
+description: 'Action Description'
+branding:
+  color: 'blue'
+  icon: 'upload-cloud'
+
+inputs:
+  alias-ids-file:
+    description: 'path to file that contains the alias ids'
+    required: true
+    default: 'alias-ids.json'
+  avrae-token:
+    description: 'Your Avrae API token'
+    required: true
+  modified-files:
+    description: "JSON list of modified files"
+    required: true
+runs:
+  using: "docker"
+  image: "Dockerfile"
