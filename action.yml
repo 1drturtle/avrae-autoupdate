@@ -1,14 +1,14 @@
-name: 'Action Name'
-description: 'Action Description'
+name: 'Avrae Auto-Update'
+description: 'Updates snippets and aliases within Avrae Collections'
 branding:
   color: 'blue'
   icon: 'upload-cloud'
 
 inputs:
-  alias-ids-file:
+  collection-ids-file:
     description: 'path to file that contains the alias ids'
     required: true
-    default: 'alias-ids.json'
+    default: 'collection-ids.json'
   avrae-token:
     description: 'Your Avrae API token'
     required: true
