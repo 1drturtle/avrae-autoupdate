@@ -1,0 +1,19 @@
+name: Update Avrae Collections
+on:
+  push:
+    branches:
+      - master
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - id: modifed-files
+      uses: jitterbit/get-changed-files@master
+      with:
+        format: 'json'
+    - uses: 1drturtle/avrae-autoupdate@master
+      with:
+        avrae-token: '${{ secrets.AVRAETOKEN }}'
+        alias_id_file_name: 'collections.json'
+        modified-files: '${{ steps.modifed-files.outputs.added_modified }}'
