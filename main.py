@@ -10,14 +10,16 @@ def contains_ending(files, endings):
     return any([file.endswith(endings) for file in files])
 
 
-def scan_directories(scan_path: str = None):
+def scan_directories(scan_path: str = None, collections={}):
     cwd = scan_path or os.getcwd()
     active_dirs = []
     for dirpath, dirnames, filenames in os.walk(cwd):
         if not contains_ending(filenames, ('alias', 'snippet', 'gvar')):
             continue
         shared = os.path.commonprefix([dirpath, cwd])
-        active_dirs.append(dirpath.lstrip(shared))
+        dirname = dirpath.lstrip(shared).replace('\\', '/')
+        if dirname in collections:
+            active_dirs.append(dirpath.lstrip(shared))
     return active_dirs
 
 
@@ -35,4 +37,4 @@ if __name__ == '__main__':
     if AVRAE_TOKEN is None:
         raise MissingArgument('No Avrae Token Found.')
 
-    active_directories = scan_directories(repo_path)
+    active_directories = scan_directories(repo_path, collection_ids)
