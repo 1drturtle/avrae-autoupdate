@@ -15,5 +15,5 @@ jobs:
     - uses: 1drturtle/avrae-autoupdate@master
       with:
         avrae-token: '${{ secrets.AVRAETOKEN }}'
-        alias_id_file_name: 'collections.json'
+        collections_id_file_name: 'update/example-collections.json'
         modified-files: '${{ steps.modifed-files.outputs.added_modified }}'

@@ -317,3 +317,6 @@ dmypy.json
 
 # PyCharm Extra Files
 .idea/
+
+# testing
+testing/
