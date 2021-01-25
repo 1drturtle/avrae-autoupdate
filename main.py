@@ -221,7 +221,7 @@ if __name__ == '__main__':
     repo_path = os.environ.get('GITHUB_WORKSPACE', None)
     if repo_path:
         os.chdir(repo_path)
-    collection_ids_file = os.environ.get('INPUT_COLLECTION_IDS_FILE_NAME')
+    collection_ids_file = os.environ.get('INPUT_COLLECTIONS_ID_FILE_NAME')
     gvar_ids_file_name = os.getenv('INPUT_GVARS_ID_FILE_NAME', None)
     print(f'loading collections from {collection_ids_file}')
     print(os.listdir('.'))
