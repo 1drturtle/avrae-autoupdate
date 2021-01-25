@@ -52,7 +52,8 @@ def files_in_actives(scan_path, modified):
                 relative = pathlib.PureWindowsPath(relative)
             else:
                 relative = pathlib.PurePosixPath(relative)
-            if (path := relative.as_posix()) in modified:
+            path = relative.as_posix()
+            if path in modified:
                 files.append(path)
     return files
 
@@ -137,7 +138,8 @@ def post_request(api_key, path, request_data):
         headers=headers,
         json=request_data
     )
-    return r.json() if (raw_data := r.content.decode('ascii')).startswith('{') else raw_data
+    raw_data = r.content.decode('ascii')
+    return r.json() if raw_data.startswith('{') else raw_data
 
 
 def put_request(api_key, path, request_data):
