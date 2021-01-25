@@ -2,6 +2,7 @@ import collections
 import json
 import os
 import pathlib
+import ntpath
 
 import requests
 
@@ -16,18 +17,27 @@ class RequestError(BaseException):
 # utility functions
 
 
+def path_leaf(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
+
+
 def contains_ending(files, endings):
     return any([file.endswith(endings) for file in files])
 
 
-def scan_directories(scan_path: str, to_scan: set):
+def scan_directories(scan_path: str, to_scan=None):
     cwd = scan_path or os.getcwd()
     active_dirs = []
     for dirpath, dirnames, filenames in os.walk(cwd):
         if not contains_ending(filenames, ('alias', 'snippet', 'gvar')):
             continue
         shared = os.path.commonprefix([dirpath, cwd])
-        if (dirname := dirpath.lstrip(shared).replace('\\', '/')) in to_scan:
+        dirname = os.path.relpath(dirpath, shared).replace('\\', '/')
+        if to_scan:
+            if dirname in to_scan:
+                active_dirs.append(dirname)
+        else:
             active_dirs.append(dirname)
     return active_dirs
 
@@ -101,6 +111,21 @@ def construct_file_paths(collection_data, collection_path):
     return file_paths
 
 
+def construct_gvars(ids, files):
+    gvar_names = [path_leaf(x) for x in files]
+    constructed = []
+    for listed_gvar in ids:
+        for i, gvar_name in enumerate(gvar_names):
+            if gvar_name.startswith(listed_gvar):
+                with open(files[i]) as read:
+                    content = read.read()
+                gvar_desc = gvar_name.strip(listed_gvar).strip()
+                gvar = ConstructedPath(gvar_desc if gvar_desc else listed_gvar,
+                                       files[i], listed_gvar, 'gvar', content)
+                constructed.append(gvar)
+    return constructed
+
+
 # Requests
 
 def post_request(api_key, path, request_data):
@@ -112,7 +137,7 @@ def post_request(api_key, path, request_data):
         headers=headers,
         json=request_data
     )
-    return r.json()
+    return r.json() if (raw_data := r.content.decode('ascii')).startswith('{') else raw_data
 
 
 def put_request(api_key, path, request_data):
@@ -161,6 +186,17 @@ def update_workshop_obj(type_: str, object_id, code: str, api_key):
     return code_version, set_active
 
 
+def update_gvar(obj: ConstructedPath, api_key):
+    url = f'https://api.avrae.io/customizations/gvars/{obj.id}'
+    request_data = {
+        'value': obj.content
+    }
+    request_result = post_request(api_key, url, request_data)
+    if request_result != 'Gvar updated.':
+        raise RequestError(f'{obj.type.title()} update did not succeed.\n{request_result}')
+    return request_result
+
+
 def read_and_update(obj: ConstructedPath, api_key):
     new_content = None
     try:
@@ -180,10 +216,13 @@ def read_and_update(obj: ConstructedPath, api_key):
 if __name__ == '__main__':
 
     # Collect Environmental Variables
+    repo_path = os.environ.get('GITHUB_WORKSPACE', None)
+    if repo_path:
+        os.chdir(repo_path)
     collection_ids_file = os.environ.get('INPUT_COLLECTION_IDS_FILE_NAME')
+    gvar_ids_file_name = os.getenv('INPUT_GVARS_ID_FILE_NAME', None)
     with open(collection_ids_file) as f:
         collection_ids = json.loads(f.read())
-    repo_path = os.environ.get('GITHUB_WORKSPACE', None)
     AVRAE_TOKEN = os.getenv('INPUT_AVRAE-TOKEN', None)
     modified_files_list = json.loads(os.getenv('INPUT_MODIFIED-FILES', '[]'))
 
@@ -216,3 +255,13 @@ if __name__ == '__main__':
             print(f'- Updated {obj.type} {obj.obj_name} ({obj.id})'
                   f' - Updated? {result[0]["success"] and result[1]["success"]}'
                   f' - Version {result[0]["data"]["version"] if result[0]["success"] else "N/A"}')
+
+    # update our global variables
+    if gvar_ids_file_name:
+        with open(gvar_ids_file_name) as f:
+            gvar_ids = json.loads(f.read())
+        gvar_files = [file for file in active_files if file.endswith('gvar')]
+        constructed_gvars = construct_gvars(gvar_ids, gvar_files)
+        for gvar in constructed_gvars:
+            rq = update_gvar(gvar, AVRAE_TOKEN)
+            print(f'- Updated GVAR {gvar.id}')
