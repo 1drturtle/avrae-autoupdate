@@ -224,7 +224,6 @@ if __name__ == '__main__':
     collection_ids_file = os.environ.get('INPUT_COLLECTIONS_ID_FILE_NAME')
     gvar_ids_file_name = os.getenv('INPUT_GVARS_ID_FILE_NAME', None)
     print(f'loading collections from {collection_ids_file}')
-    print(os.listdir('.'))
     with open(collection_ids_file) as f:
         collection_ids = json.loads(f.read())
     AVRAE_TOKEN = os.getenv('INPUT_AVRAE-TOKEN', None)
