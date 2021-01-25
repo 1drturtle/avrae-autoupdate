@@ -52,20 +52,30 @@ def files_in_actives(scan_path, modified):
 # if it's a base alias, there is an alias in it's own folder
 # alias with sub-aliases in folder, alias with no sub-aliases by itself
 
-ConstructedPath = collections.namedtuple('ConstructedPath', ['rel_path'])
+ConstructedPath = collections.namedtuple('ConstructedPath', ['obj_name', 'rel_path', 'alias_id', 'type'])
 
 
 def construct_file_paths(collection_data, collection_path):
     logged_parents = {}
     file_paths = []
 
-    def parse_alias(alias_data):
-        folder_name = alias_data['name'].lower()
-        curpath = None
-        if alias_data['parent_id']:
-            curpath = os.path.join(logged_parents[alias_data['parent_id']], folder_name)
+    def parse_obj(obj_data, suffix='.alias', own_folder=True):
+        folder_name = obj_data['name'].lower()
+        obj_name = folder_name + suffix
+        curpath, to_log = None, None
+        try:
+            pid = obj_data['parent_id']
+        except KeyError:
+            pid = None
+        if pid:
+            to_log = os.path.join(logged_parents[obj_data['parent_id']], folder_name)
+            curpath = os.path.join(logged_parents[obj_data['parent_id']], obj_name)
         else:
-            curpath = os.path.join(collection_path, folder_name)
+            to_log = os.path.join(collection_path, folder_name)
+            if own_folder:
+                curpath = os.path.join(to_log, obj_name)
+            else:
+                curpath = os.path.join(collection_path, obj_name)
 
         if '\\' in curpath:
             curpath = pathlib.PureWindowsPath(curpath)
@@ -73,13 +83,19 @@ def construct_file_paths(collection_data, collection_path):
             curpath = pathlib.PurePosixPath(curpath)
         curpath = curpath.as_posix()
 
-        logged_parents[alias_data['_id']] = curpath
-        file_paths.append(curpath + '.alias')
-        for subalias in alias_data['subcommands']:
-            parse_alias(subalias)
+        logged_parents[obj_data['_id']] = to_log
+        constructed = ConstructedPath(folder_name, curpath, obj_data['_id'], suffix.strip('.'))
+        file_paths.append(constructed)
+        try:
+            for subalias in obj_data['subcommands']:
+                parse_obj(subalias)
+        except KeyError:
+            pass
 
     for alias in collection_data['aliases']:
-        parse_alias(alias)
+        parse_obj(alias)
+    for snippet in collection_data['snippets']:
+        parse_obj(snippet, '.snippet', own_folder=False)
 
     return file_paths
 
@@ -167,8 +183,7 @@ if __name__ == '__main__':
     for collection in collection_ids:
         data = get_collection_info(AVRAE_TOKEN, collection_ids[collection])
         paths = construct_file_paths(data['data'], collection)
-        print(paths, modified_files_list)
+        print(json.dumps([p._asdict() for p in paths], indent=4))
 
-    # Get Collection Data
     # Update Aliases/Snippets
     # Update GVAR
