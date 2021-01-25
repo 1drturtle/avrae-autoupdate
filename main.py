@@ -1,8 +1,9 @@
+import collections
+import json
 import os
 import pathlib
+
 import requests
-import json
-import collections
 
 
 class MissingArgument(BaseException):
