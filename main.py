@@ -14,6 +14,7 @@ class RequestError(BaseException):
 
 # utility functions
 
+
 def contains_ending(files, endings):
     return any([file.endswith(endings) for file in files])
 
@@ -52,12 +53,12 @@ def files_in_actives(scan_path, modified):
 # if it's a base alias, there is an alias in it's own folder
 # alias with sub-aliases in folder, alias with no sub-aliases by itself
 
-ConstructedPath = collections.namedtuple('ConstructedPath', ['obj_name', 'rel_path', 'alias_id', 'type'])
+ConstructedPath = collections.namedtuple('ConstructedPath', ['obj_name', 'rel_path', 'id', 'type', 'content'])
 
 
 def construct_file_paths(collection_data, collection_path):
     logged_parents = {}
-    file_paths = []
+    file_paths = set()
 
     def parse_obj(obj_data, suffix='.alias', own_folder=True):
         folder_name = obj_data['name'].lower()
@@ -84,8 +85,9 @@ def construct_file_paths(collection_data, collection_path):
         curpath = curpath.as_posix()
 
         logged_parents[obj_data['_id']] = to_log
-        constructed = ConstructedPath(folder_name, curpath, obj_data['_id'], suffix.strip('.'))
-        file_paths.append(constructed)
+        constructed = ConstructedPath(folder_name, curpath,
+                                      obj_data['_id'], suffix.strip('.'), content=obj_data['code'])
+        file_paths.add(constructed)
         try:
             for subalias in obj_data['subcommands']:
                 parse_obj(subalias)
@@ -156,7 +158,23 @@ def update_workshop_obj(type: str, object_id, code: str, api_key):
         'version': code_version['data']['version']
     }
     set_active = put_request(api_key, put_url, put_data)
-    return set_active
+    return code_version, set_active
+
+
+def read_and_update(obj: ConstructedPath, api_key):
+    new_content = None
+    try:
+        with open(obj.rel_path) as f:
+            new_content = f.read()
+    except FileNotFoundError:
+        print(f'!! File {obj.rel_path} not found! skipping. !!')
+    if new_content is None:
+        return None
+    print(f'- Updating {obj.type} {obj.obj_name} ({obj.id})')
+    if new_content == obj.content:
+        print('- No change in object code, skipping...')
+        return -1
+    return update_workshop_obj(obj.type, obj.id, new_content, api_key)
 
 
 if __name__ == '__main__':
@@ -181,9 +199,20 @@ if __name__ == '__main__':
 
     # construct possible file paths from collections
     for collection in collection_ids:
+        # get our collection's info
         data = get_collection_info(AVRAE_TOKEN, collection_ids[collection])
+        # construct file paths based on collection data
         paths = construct_file_paths(data['data'], collection)
-        print(json.dumps([p._asdict() for p in paths], indent=4))
+        # compare constructed paths to modified files
+        modified_objects = {obj for obj in paths if obj.rel_path in modified_files_list}
 
-    # Update Aliases/Snippets
-    # Update GVAR
+        # update every modified file
+        for obj in modified_objects:
+            result = read_and_update(obj, AVRAE_TOKEN)
+            if result is None:
+                print('- File not found.')
+            elif result == -1:
+                continue
+            print(f'- Updated {obj.type} {obj.obj_name} ({obj.id})'
+                  f' - Updated? {result[0]["success"] and result[1]["success"]}'
+                  f' - Version {result[0]["data"]["version"] if result[0]["success"] else "N/A"}')
