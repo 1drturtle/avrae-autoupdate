@@ -20,32 +20,31 @@ def contains_ending(files, endings):
     return any([file.endswith(endings) for file in files])
 
 
-def scan_directories(scan_path: str = None, collections={}):
+def scan_directories(scan_path: str, to_scan: set):
     cwd = scan_path or os.getcwd()
     active_dirs = []
     for dirpath, dirnames, filenames in os.walk(cwd):
         if not contains_ending(filenames, ('alias', 'snippet', 'gvar')):
             continue
         shared = os.path.commonprefix([dirpath, cwd])
-        if (dirname := dirpath.lstrip(shared).replace('\\', '/')) in collections:
+        if (dirname := dirpath.lstrip(shared).replace('\\', '/')) in to_scan:
             active_dirs.append(dirname)
     return active_dirs
 
 
 def files_in_actives(scan_path, modified):
     cwd = scan_path or os.getcwd()
-    active_files = []
+    files = []
     for dirpath, dirnames, filenames in os.walk(cwd):
         for file in filenames:
-            shared = os.path.commonprefix([cwd, dirpath])
             relative = os.path.join(os.path.relpath(dirpath, cwd), file)
             if '\\' in relative:
                 relative = pathlib.PureWindowsPath(relative)
             else:
                 relative = pathlib.PurePosixPath(relative)
             if (path := relative.as_posix()) in modified:
-                active_files.append(path)
-    return active_files
+                files.append(path)
+    return files
 
 
 # take a collection's data and path
@@ -64,7 +63,6 @@ def construct_file_paths(collection_data, collection_path):
     def parse_obj(obj_data, suffix='.alias', own_folder=True):
         folder_name = obj_data['name'].lower()
         obj_name = folder_name + suffix
-        curpath, to_log = None, None
         try:
             pid = obj_data['parent_id']
         except KeyError:
@@ -105,26 +103,26 @@ def construct_file_paths(collection_data, collection_path):
 
 # Requests
 
-def post_request(api_key, path, data):
+def post_request(api_key, path, request_data):
     headers = {
         'Authorization': api_key
     }
     r = requests.post(
         url=path,
         headers=headers,
-        json=data
+        json=request_data
     )
     return r.json()
 
 
-def put_request(api_key, path, data):
+def put_request(api_key, path, request_data):
     headers = {
         'Authorization': api_key
     }
     r = requests.put(
         url=path,
         headers=headers,
-        json=data
+        json=request_data
     )
     return r.json()
 
@@ -138,23 +136,24 @@ def get_collection_info(api_key, collection_id):
         url=path,
         headers=headers
     )
-    data = r.json()
-    if not data['success']:
-        raise RequestError(f'{collection_id} collection data grab did not succeed.\n{json.dumps(data, indent=4)}')
+    request_data = r.json()
+    if not request_data['success']:
+        raise RequestError(f'{collection_id} collection data grab did not succeed.\n'
+                           f'{json.dumps(request_data, indent=4)}')
     return r.json()
 
 
-def update_workshop_obj(type: str, object_id, code: str, api_key):
-    if type not in ['alias', 'snippet']:
+def update_workshop_obj(type_: str, object_id, code: str, api_key):
+    if type_ not in ['alias', 'snippet']:
         raise ValueError('Type must be alias or snippet')
-    url = f'https://api.avrae.io/workshop/{type}/{object_id}/code'
-    data = {
+    url = f'https://api.avrae.io/workshop/{type_}/{object_id}/code'
+    request_data = {
         'content': code
     }
-    code_version = post_request(api_key, url, data)
+    code_version = post_request(api_key, url, request_data)
     if not code_version['success']:
-        raise RequestError(f'{type.title()} Code Version did not succeed.\n{json.dumps(code_version, indent=4)}')
-    put_url = f'https://api.avrae.io/workshop/{type}/{object_id}/active-code'
+        raise RequestError(f'{type_.title()} Code Version did not succeed.\n{json.dumps(code_version, indent=4)}')
+    put_url = f'https://api.avrae.io/workshop/{type_}/{object_id}/active-code'
     put_data = {
         'version': code_version['data']['version']
     }
@@ -165,8 +164,8 @@ def update_workshop_obj(type: str, object_id, code: str, api_key):
 def read_and_update(obj: ConstructedPath, api_key):
     new_content = None
     try:
-        with open(obj.rel_path) as f:
-            new_content = f.read()
+        with open(obj.rel_path) as file:
+            new_content = file.read()
     except FileNotFoundError:
         print(f'!! File {obj.rel_path} not found! skipping. !!')
     if new_content is None:
