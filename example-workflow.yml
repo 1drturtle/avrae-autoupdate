@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - id: modifed-files
+    - id: modified-files
       uses: jitterbit/get-changed-files@master
       with:
         format: 'json'
     - uses: 1drturtle/avrae-autoupdate@master
       with:
         avrae-token: '${{ secrets.AVRAETOKEN }}'
-        collections_id_file_name: 'update/example-collections.json'
-        modified-files: '${{ steps.modifed-files.outputs.added_modified }}'
+        collections_id_file_name: 'example-collections.json'
+        modified-files: '${{ steps.modified-files.outputs.added_modified }}'
