@@ -2,6 +2,8 @@
 
 Automatically handles updating workshop aliases and snippets. Has support for updating GVARs.
 
+[Here's an example of a repository that would use this](https://github.com/1drturtle/test-avrae-autoupdate)
+
 Installation Instructions
 -------------------------
 1. Get your Avrae Token. You can do this by going to [the Avrae Website](https://avrae.io) and opening up the developer console. Then, go to Storage, Local Storage, and copy the value of the avrae_token.
@@ -12,3 +14,5 @@ Installation Instructions
 5. Commit and push your changes.
 
 > If your primary branch of your repository is main instead of master, replace master with main in your `update_workflow.yml`
+
+
