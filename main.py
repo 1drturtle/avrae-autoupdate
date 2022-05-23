@@ -234,19 +234,25 @@ if __name__ == '__main__':
         raise MissingArgument('No Avrae Token Found.')
 
     # Grab directories that have files that end in .alias, .snippet, or .gvar
+    print("Loading directories")
     active_directories = scan_directories(repo_path, collection_ids)
-
+    print(f'{active_directories=}')
+    
     # Go through our modified files and see if they are in active directories
+    print("loading files from directories")
     active_files = files_in_actives(repo_path, modified_files_list)
+    print(f'{active_files=}')
 
     # construct possible file paths from collections
     for collection in collection_ids:
+        print("Looking at " + collection) 
         # get our collection's info
         data = get_collection_info(AVRAE_TOKEN, collection_ids[collection])
         # construct file paths based on collection data
         paths = construct_file_paths(data['data'], collection)
         # compare constructed paths to modified files
         modified_objects = {obj for obj in paths if obj.rel_path in modified_files_list}
+        print(f"Found {modified_objects=}") 
 
         # update every modified file
         for obj in modified_objects:
