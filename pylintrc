@@ -1,0 +1,3 @@
+[MAIN]
+
+no-docstring-rgx=^_|^test_
