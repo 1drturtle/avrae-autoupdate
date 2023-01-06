@@ -1,0 +1,15 @@
+{
+    "owned": [
+        {
+            "_id": {
+                "$oid": "63476e3461b756e2ea555a79"
+            },
+            "owner": "308324091675271060",
+            "key": "5aec63f9-8fb4-42e2-95fe-6ca0dcb4b24e",
+            "owner_name": "Someone",
+            "value": "some code",
+            "editors": []
+        }
+    ],
+    "editable": []
+}

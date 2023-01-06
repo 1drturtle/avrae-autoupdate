@@ -1,0 +1,45 @@
+name: Pull changes from Avrae
+
+on:
+  workflow_call:
+    inputs:
+      collections:
+        description: Relative path to a JSON file containing a JSON object mapping Avrae collection ids to relative directory paths in the repo.
+        default: collections.json
+        required: false
+        type: string
+      gvars:
+        description: Relative path to a JSON file containing a JSON object mapping Avrae gvar keys to relative file paths in the repo.
+        default: gvars.json
+        required: false
+        type: string
+    secrets:
+      avrae_token:
+        description: An authentication token from https://avrae.io/dashboard
+        required: true
+
+jobs:
+  deploy_changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Dintanthrir/avrae-autoupdate/actions/pull@main
+        with:
+          collections: ${{ inputs.collections }}
+          gvars: ${{ inputs.gvars }}
+          avrae_token: ${{ secrets.avrae_token }}
+      - name: Update permissions on newly created files
+        run: sudo chown -R $USER:$USER .
+      - name: Create a pull request with any changes
+        id: cpr
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Changes pulled from Avrae ${{ github.event.repository.updated_at }}
+          branch: pull-changes-from-avrae
+          delete-branch: true
+          title: Updates from Avrae
+          body: Update local files to match changes found on the Avrae dashboard.
+      - name: Report pull request results
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          echo "## Changes published to ${{ steps.cpr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY

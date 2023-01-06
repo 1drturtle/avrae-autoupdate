@@ -1,0 +1,27 @@
+name: 'Push to Avrae'
+description: 'Push changes to the Avrae dashboard'
+author: 'Dintanthrir'
+inputs: 
+  collections:
+    description: Relative path to a JSON file containing a JSON object mapping Avrae collection ids to relative directory paths in the repo.
+    default: collections.json
+    required: false
+    type: string
+  gvars:
+    description: Relative path to a JSON file containing a JSON object mapping Avrae gvar keys to relative file paths in the repo.
+    default: gvars.json
+    required: false
+    type: string
+  avrae_token:
+    description: An authentication token from https://avrae.io/dashboard
+    required: true
+runs:
+  using: 'docker'
+  image: '../../Dockerfile'
+  env:
+    AVRAE_TOKEN: ${{ inputs.avrae_token }}
+    COLLECTIONS_CONFIG: ${{ inputs.collections }}
+    GVARS_CONFIG: ${{ inputs.gvars }}
+  args: 
+    - 'python'
+    - '/app/push.py'

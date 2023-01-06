@@ -1,0 +1,7 @@
+name: Initialize from Avrae
+on: workflow_dispatch
+
+jobs:
+  pull:
+    uses: Dintanthrir/avrae-autoupdate/.github/workflows/initialize_from_avrae.yaml@main
+    secrets: inherit

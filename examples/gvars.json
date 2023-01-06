@@ -1,0 +1,5 @@
+{
+  "<gvar key>": "<relative/path/to/file.gvar>",
+  "00000000-0000-0000-0000-000000000000": "gvars/my-module.gvar",
+  "00000000-0000-0000-0000-000000000001": "gvars/my-custom-table.yml"
+}

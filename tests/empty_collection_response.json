@@ -1,0 +1,20 @@
+{
+    "success": true,
+    "data": {
+        "name": "Scratchpad",
+        "description": "A collection for testing avrae updates.",
+        "image": null,
+        "owner": "308324091675279360",
+        "alias_ids": [],
+        "snippet_ids": [],
+        "publish_state": "PRIVATE",
+        "num_subscribers": 0,
+        "num_guild_subscribers": 0,
+        "last_edited": "2022-11-24T22:10:24.683000Z",
+        "created_at": "2022-11-24T22:10:24.683000Z",
+        "tags": [],
+        "_id": "637febd016eb2e36c2591b47",
+        "aliases": [],
+        "snippets": []
+    }
+}

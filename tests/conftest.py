@@ -3,6 +3,7 @@ import pytest
 from autoupdate.avrae import (
     Alias,
     Collection,
+    Gvar,
     Snippet,
 )
 
@@ -81,3 +82,18 @@ def collection_fixtures() -> dict[str, Collection]:
     Collections test fixtures, a dict mapping ids to Collections
     """
     return COLLECTIONS
+
+@pytest.fixture
+def gvars_fixture() -> list[Gvar]:
+    """
+    Gvars fixture, a list of Gvars
+    """
+    return [
+        Gvar(
+            owner='308324091675271060',
+            key='5aec63f9-8fb4-42e2-95fe-6ca0dcb4b24e',
+            owner_name='Someone',
+            value='some code',
+            editors=[]
+        )
+    ]
