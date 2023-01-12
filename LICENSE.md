@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2022 Chris
+https://github.com/Dintanthrir/avrae-autoupdate Copyright (c) 2023 115845548+Dintanthrir@users.noreply.github.com
+https://github.com/1drturtle/avrae-autoupdate Copyright (c) 2022 Chris
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
