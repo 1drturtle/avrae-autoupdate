@@ -4,6 +4,8 @@
 2. `pull` copies any missing sources and documentation from Avrea into your repository.
 3. `push` creates new alias and snippet code versions for any code changes added to your repository. Documentation and gvars are not versioned in Avrea so those are always overwritten with the contents of your repository when they differ.
 
+For a minimal example of a repository using these workflows see https://github.com/Dintanthrir/avrae-autoupdate-example
+
 ## Setup Instructions
 ### Create a github repository (or use an existing one)
 If you are starting from scratch consider using the https://github.com/Dintanthrir/avrae-autoupdate-template template repository to automate many of these steps.
