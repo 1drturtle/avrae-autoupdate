@@ -4,6 +4,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   pull:
     uses: Dintanthrir/avrae-autoupdate/.github/workflows/push_to_avrae.yaml@main
