@@ -5,6 +5,8 @@
 3. `push` creates new alias and snippet code versions for any code changes added to your repository. Documentation and gvars are not versioned in Avrea so those are always overwritten with the contents of your repository when they differ.
 
 ## Setup Instructions
+### Create a github repository (or use an existing one)
+If you are starting from scratch consider using the https://github.com/Dintanthrir/avrae-autoupdate-template template repository to automate many of these steps.
 ### Get your Avrae Token.
 You can do this by going to [the Avrae Website](https://avrae.io) and opening up the developer console. Then, go to Storage, Local Storage, and copy the value of the avrae_token.
 	* With your Avrae Token, go to your GitHub Repository and click settings. Then, near the bottom-left click Actions -> Secrets. Click New Repository Secret and call it `AVRAE_TOKEN`, and put your token into the value textbox.
