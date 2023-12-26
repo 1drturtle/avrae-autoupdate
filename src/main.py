@@ -8,6 +8,7 @@
 ###
 
 from config import Config
+from parsing import Parser
 import utils as utils
 from sys import exit
 
@@ -18,12 +19,17 @@ if __name__ == "__main__":
     config = Config()
     config.load_config()
 
-    print("Parsing modified files.")
-
     # Step Two: Find our workspaces & check our modified files.
+    print("Parsing modified files.")
     modified_files = utils.parse_paths(config.modified_files)
     if len(modified_files) == 0:
         print("No modified files detected. Quitting...")
         exit(0)
 
     # Step Three: Parse our collections and gvars!
+    parser = Parser(config)
+    parser.load_collections()
+    parser.load_gvars()
+    parser.find_connected_files(modified_files)
+
+    # Step Four: Download Collection Data from Avrae and find relevant files to update

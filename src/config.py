@@ -23,7 +23,9 @@ class Config:
         # Load Avrae Token
         self.token = os.environ.get("INPUT_AVRAE_TOKEN", None)
         if self.token is None:
-            raise Exception("Avrae token not found. Exiting...")
+            raise Exception(
+                "Avrae token not found. Please see README.md in the project repo for help with setup. Exiting..."
+            )
 
         print(" - [CONFIG]: Loading file paths...")
         self.collections_file_path = os.environ.get(
