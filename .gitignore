@@ -320,3 +320,5 @@ dmypy.json
 
 # testing
 testing/
+collections.json
+gvars.json
