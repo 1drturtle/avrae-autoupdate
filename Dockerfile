@@ -7,7 +7,7 @@ RUN pip install --target=/app -r requirements.txt
 
 # A distroless container image with Python and some basics like SSL certificates
 # https://github.com/GoogleContainerTools/distroless
-FROM gcr.io/distroless/python3.11-debian10
+FROM python:3.11-slim
 COPY --from=builder /app /app
 WORKDIR /app
 ENV PYTHONPATH /app
