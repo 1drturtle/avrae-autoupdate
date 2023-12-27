@@ -12,7 +12,7 @@ jobs:
         uses: jitterbit/get-changed-files@master
         with:
           format: "json"
-      - uses: 1drturtle/avrae-autoupdate@master
+      - uses: 1drturtle/avrae-autoupdate@dev
         with:
           avrae_token: "${{ secrets.AVRAE_TOKEN }}"
           collections_id_file_name: "collections.json"
