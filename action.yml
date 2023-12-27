@@ -16,7 +16,7 @@ inputs:
   avrae_token:
     description: "Your Avrae API token"
     required: true
-  modified_files_file_name:
+  modified_files:
     description: "JSON list of modified files"
     required: true
 runs:
