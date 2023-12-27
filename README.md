@@ -35,11 +35,11 @@ Github Repository
 
 > Warning: Take caution when performing step 2. Your Avrae token should be kept secret, so please do *not* share the token or do anything with it except place it as a github secret. This action does *not* leak any tokens to logs.
 
-1. Install the action file into your repository. See the above graphic for where the YAML file should go, under the `.github` directory. An example workflow is provided in the example folder, [here](https://github.com/1drturtle/avrae-autoupdate/tree/master/examples/ex-workflow.yml).
+1. Install the action file into your repository. See the above graphic for where the YAML file should go, under the `.github` directory. An example workflow is provided in the example folder, [here](https://github.com/1drturtle/avrae-autoupdate/tree/main/examples/ex-workflow.yml).
     1. Ensure that the correct branch is present under line 5. Typical values include `main` and `master`.
 2. Create and populate your `collections.json` and your `gvars.json`
-    1. `collections.json` should contain a JSON dictionary. See example [here](https://github.com/1drturtle/avrae-autoupdate/blob/master/examples/ex-collections.json)
-    2. `gvars.json` should contain a JSON dictonary. See example [here](https://github.com/1drturtle/avrae-autoupdate/blob/master/examples/ex-gvars.json)
+    1. `collections.json` should contain a JSON dictionary. See example [here](https://github.com/1drturtle/avrae-autoupdate/blob/main/examples/ex-collections.json)
+    2. `gvars.json` should contain a JSON dictonary. See example [here](https://github.com/1drturtle/avrae-autoupdate/blob/main/examples/ex-gvars.json)
 3. Add your Avrae Token to your repository.
     1. Go to `https://avrae.io/dashboard` and ensure you are signed into your account.
     2. Open your browser's developer console, usually via `F12`
