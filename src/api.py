@@ -83,7 +83,7 @@ class Avrae:
             raise Exception(
                 f"Could not update docs of {file_path}\n{json.dumps(update_response, indent=2)}"
             )
-        print(" - [API]: \tDocs Updated")
+        print(f" - [API]: \tDocs Updated ({parsed_data.name})")
 
     def get_gvar(self, gvar_id):
         path = f"https://api.avrae.io/customizations/gvars/{gvar_id}"
