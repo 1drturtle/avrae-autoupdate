@@ -11,4 +11,4 @@ FROM python:3.11-slim
 COPY --from=builder /app /app
 WORKDIR /app
 ENV PYTHONPATH /app
-CMD ["/app/src/main.py"]
+CMD ["python", "/app/src/main.py"]
