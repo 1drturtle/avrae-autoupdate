@@ -5,10 +5,14 @@ branding:
   icon: "upload-cloud"
 
 inputs:
-  collection_ids_file_name:
+  collections_id_file_name:
     description: "File path that contains collection IDs. See README.md and example repo."
     required: true
-    default: "collection-ids.json"
+    default: "collection.json"
+  gvars_id_file_name:
+    description: "File path that contains GVAR IDs."
+    required: true
+    default: "gvars.json"
   avrae_token:
     description: "Your Avrae API token"
     required: true
