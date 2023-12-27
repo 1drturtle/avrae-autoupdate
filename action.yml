@@ -5,14 +5,14 @@ branding:
   icon: "upload-cloud"
 
 inputs:
-  collection-ids-file:
+  collection_ids_file:
     description: "File path that contains collection IDs. See README.md and example repo."
     required: true
     default: "collection-ids.json"
-  avrae-token:
+  avrae_token:
     description: "Your Avrae API token"
     required: true
-  modified-files:
+  modified_files:
     description: "JSON list of modified files"
     required: true
 runs:
