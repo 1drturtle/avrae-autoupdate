@@ -51,28 +51,21 @@ if __name__ == "__main__":
         avrae.parse_collection(collection_id, parser)
         # update aliases
         for alias_path, parsed_alias in avrae.alias_outputs[collection_id].items():
-            if alias_path not in modified_paths:
-                continue
-            # Update alias and update doc
-            avrae.check_and_maybe_update("alias", parsed_alias)
-            if parsed_alias.docs_path not in modified_paths:
-                continue
-            avrae.check_and_maybe_update_docs("alias", parsed_alias)
+            if alias_path in modified_paths:
+                avrae.check_and_maybe_update("alias", parsed_alias)
+            if parsed_alias.docs_path in modified_paths:
+                avrae.check_and_maybe_update_docs("alias", parsed_alias)
         # update snippets
         for snippet_path, parsed_snippet in avrae.snippet_outputs[
             collection_id
         ].items():
-            if snippet_path not in modified_paths:
-                continue
-            # Update alias and update doc
-            avrae.check_and_maybe_update("snippet", parsed_snippet)
-            if parsed_snippet.docs_path not in modified_paths:
-                continue
-            avrae.check_and_maybe_update_docs("snippet", parsed_snippet)
+            if snippet_path in modified_paths:
+                avrae.check_and_maybe_update("snippet", parsed_snippet)
+            if parsed_snippet.docs_path in modified_paths:
+                avrae.check_and_maybe_update_docs("snippet", parsed_snippet)
 
     # Step Five: Update GVARs
     print(" - [API] Checking GVARs...")
     for gvar_path, gvar_id in parser.gvars.items():
-        if gvar_path not in modified_paths:
-            continue
-        avrae.check_and_maybe_update_gvar(gvar_path, gvar_id)
+        if gvar_path in modified_paths:
+            avrae.check_and_maybe_update_gvar(gvar_path, gvar_id)
