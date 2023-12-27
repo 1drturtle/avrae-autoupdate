@@ -12,6 +12,8 @@ from parsing import Parser
 from api import Avrae
 import utils as utils
 from sys import exit
+from models import *
+
 
 if __name__ == "__main__":
     print("Starting Avrae Auto-Updater!")
@@ -33,21 +35,44 @@ if __name__ == "__main__":
     parser.load_collections()
     parser.load_gvars()
     parser.find_connected_files(modified_files)
+    modified_paths = set(x.path for x in parser.connected_files)
     print(" - [PARSER]: Data loaded.")
 
     # Step Four: Download Collection Data from Avrae and find relevant files to update
 
-    ## download full collection data
-    ## parse alias/sub-alias recursively to create paths >Done
     ## for each path, check to see if file content is up to date
+    ## also check for the markdown
     ## if changed, push update and change active version
     ## snippets will reside in the collection directory
+    print(" - [API]: Checking collections...")
     avrae = Avrae(config)
-    # TODO: removing testing
-    avrae.parse_collection("5fa19a9814a62cb7e811c5c4", parser)
-    online_paths = set(avrae.alias_outputs["5fa19a9814a62cb7e811c5c4"].keys())
-    modified_paths = set(x.path for x in parser.connected_files)
-    online_and_modified = list(online_paths & modified_paths)
-    print(avrae.alias_outputs["5fa19a9814a62cb7e811c5c4"][online_and_modified[0]])
+    for path, collection_id in parser.collections.items():
+        print(f" - [API]: Checking Collection {collection_id} at {path.as_posix()}")
+        avrae.parse_collection(collection_id, parser)
+        # update aliases
+        for alias_path, parsed_alias in avrae.alias_outputs[collection_id].items():
+            if alias_path not in modified_paths:
+                continue
+            # Update alias and update doc
+            avrae.check_and_maybe_update("alias", parsed_alias)
+            if parsed_alias.docs_path not in modified_paths:
+                continue
+            avrae.check_and_maybe_update_docs("alias", parsed_alias)
+        # update snippets
+        for snippet_path, parsed_snippet in avrae.snippet_outputs[
+            collection_id
+        ].items():
+            if snippet_path not in modified_paths:
+                continue
+            # Update alias and update doc
+            avrae.check_and_maybe_update("snippet", parsed_snippet)
+            if parsed_snippet.docs_path not in modified_paths:
+                continue
+            avrae.check_and_maybe_update_docs("snippet", parsed_snippet)
 
     # Step Five: Update GVARs
+    print(" - [API] Checking GVARs...")
+    for gvar_path, gvar_id in parser.gvars.items():
+        if gvar_path not in modified_paths:
+            continue
+        avrae.check_and_maybe_update_gvar(gvar_path, gvar_id)
