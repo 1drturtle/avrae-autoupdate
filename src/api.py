@@ -55,7 +55,7 @@ class Avrae:
         # update active code version
         update_code_version = self.put_request(
             api_key=self.token,
-            path=f"https://api.avrae.io/workshop/{parsed_data.data['_id']}/active-code",
+            path=f"https://api.avrae.io/workshop/{type_}/{parsed_data.data['_id']}/active-code",
             request_data=json.dumps({"version": code_version}),
         )
         if update_response["success"] == False:
