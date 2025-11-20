@@ -2,38 +2,75 @@
 # Avrae API Handler
 ###
 
-import requests
 import json
 from pathlib import Path
+from time import sleep
+from typing import Any, Dict, Optional
 
-from models import *
+from requests import RequestException, Response, Session
+
+from models import ParsedAlias, ParsedSnippet
 
 
 class Avrae:
     def __init__(self, config):
         self.token = config.token
-        self.path_maps = {}  # {collection_id: PathMap} PathMap: {alias_id: Path}
-        self.alias_outputs = {}  # collection_id: {alias_path: ParsedAlias}
-        self.snippet_outputs = {}  # collection_id: {snippet_path: ParsedSnippet}
-        self.objects = {}  # {object_id: data}
+        self.session: Session = Session()
+        self.path_maps: Dict[str, Dict[str, str]] = {}  # {collection_id: PathMap} PathMap: {alias_id: Path}
+        self.alias_outputs: Dict[str, Dict[Path, ParsedAlias]] = {}  # collection_id: {alias_path: ParsedAlias}
+        self.snippet_outputs: Dict[str, Dict[Path, ParsedSnippet]] = {}  # collection_id: {snippet_path: ParsedSnippet}
+        self.objects: Dict[str, Dict[str, Any]] = {}  # {object_id: data}
 
-    def post_request(self, api_key, path, request_data):
-        headers = {"Authorization": api_key}
-        r = requests.post(url=path, headers=headers, json=request_data)
-        raw_data = r.content.decode("ascii")
-        return r.json() if raw_data.startswith("{") else raw_data
+    def _request(
+        self, method: str, path: str, request_data: Optional[Dict[str, Any]] = None
+    ) -> Response:
+        headers = {"Authorization": self.token}
+        last_exc: Optional[Exception] = None
+        for attempt in range(3):
+            try:
+                response = self.session.request(
+                    method,
+                    url=path,
+                    headers=headers,
+                    json=request_data,
+                    timeout=10,
+                )
+                if response.status_code >= 500:
+                    raise RequestException(
+                        f"Server error {response.status_code}: {response.text}"
+                    )
+                if response.status_code >= 400:
+                    raise RequestException(
+                        f"Request failed {response.status_code}: {response.text}"
+                    )
+                return response
+            except RequestException as exc:
+                last_exc = exc
+                if attempt == 2:
+                    break
+                sleep_seconds = 2**attempt
+                print(f" - [API]: Request failed ({exc}); retrying in {sleep_seconds}s...")
+                sleep(sleep_seconds)
+        if last_exc:
+            raise last_exc
+        raise RequestException("Unknown request failure")
 
-    def put_request(self, api_key, path, request_data):
-        headers = {"Authorization": api_key}
-        r = requests.put(url=path, headers=headers, json=request_data)
+    def post_request(self, path: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        r = self._request("post", path, request_data)
+        try:
+            return r.json()
+        except ValueError as exc:
+            raise ValueError(f"Non-JSON response from {path}: {r.text}") from exc
+
+    def put_request(self, path: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        r = self._request("put", path, request_data)
         return r.json()
 
-    def patch_request(self, api_key, path, request_data):
-        headers = {"Authorization": api_key}
-        r = requests.patch(url=path, headers=headers, json=request_data)
+    def patch_request(self, path: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        r = self._request("patch", path, request_data)
         return r.json()
 
-    def check_and_maybe_update(self, type_: str, parsed_data):
+    def check_and_maybe_update(self, type_: str, parsed_data: ParsedAlias | ParsedSnippet) -> int:
         # load our file content and check for differences
         file_path = parsed_data.file_path
         with open(file_path, "r") as fp:
@@ -42,7 +79,6 @@ class Avrae:
                 return -1
         # update file via POST request
         update_response = self.post_request(
-            self.token,
             f"https://api.avrae.io/workshop/{type_}/{parsed_data.data['_id']}/code",
             {"content": file_contents},
         )
@@ -54,28 +90,25 @@ class Avrae:
         code_version = update_response["data"]["version"]
         # update active code version
         update_code_version = self.put_request(
-            api_key=self.token,
             path=f"https://api.avrae.io/workshop/{type_}/{parsed_data.data['_id']}/active-code",
             request_data={"version": code_version},
         )
-        if update_response["success"] == False:
+        if update_code_version["success"] == False:
             raise Exception(
-                f"Could not update code version of {file_path}\n{json.dumps(update_response, indent=2)}"
+                f"Could not update code version of {file_path}\n{json.dumps(update_code_version, indent=2)}"
             )
         print(f" - [API]:\tCode Version: {code_version}")
         return 0
 
-    def check_and_maybe_update_docs(self, type_: str, parsed_data):
+    def check_and_maybe_update_docs(self, type_: str, parsed_data: ParsedAlias | ParsedSnippet) -> int:
         # load our file content and check for differences
         file_path = parsed_data.docs_path
         with open(file_path, "r") as fp:
             file_contents = fp.read()
-            if file_contents == parsed_data.data["code"]:
+            if file_contents == parsed_data.data.get("docs", ""):
                 return -1
         # update file via POST request
-        # TODO: Capture and log
         update_response = self.patch_request(
-            self.token,
             f"https://api.avrae.io/workshop/{type_}/{parsed_data.data['_id']}",
             {"name": parsed_data.name, "docs": file_contents},
         )
@@ -84,14 +117,13 @@ class Avrae:
                 f"Could not update docs of {file_path}\n{json.dumps(update_response, indent=2)}"
             )
         print(f" - [API]: \tDocs Updated ({parsed_data.name})")
+        return 0
 
-    def get_gvar(self, gvar_id):
+    def get_gvar(self, gvar_id: str) -> Dict[str, Any]:
         path = f"https://api.avrae.io/customizations/gvars/{gvar_id}"
-        headers = {"Authorization": self.token}
-        r = requests.get(url=path, headers=headers)
-        return r.json()
+        return self._request("get", path).json()
 
-    def check_and_maybe_update_gvar(self, gvar_path, gvar_id):
+    def check_and_maybe_update_gvar(self, gvar_path: Path, gvar_id: str) -> int:
         # load existing data
         gvar_data = self.get_gvar(gvar_id)["value"]
 
@@ -103,25 +135,28 @@ class Avrae:
         # update file via POST request
         print(f" - [API]: Updating GVAR {gvar_id} at {gvar_path.as_posix()}")
         update_response = self.post_request(
-            self.token,
             f"https://api.avrae.io/customizations/gvars/{gvar_id}",
             {"value": file_contents},
         )
+        if isinstance(update_response, dict) and update_response.get("success") is False:
+            raise Exception(
+                f"Could not update GVAR {gvar_id}\n{json.dumps(update_response, indent=2)}"
+            )
+        return 0
 
-    def get_collection_info(self, api_key, collection_id):
+    def get_collection_info(self, collection_id: str) -> Dict[str, Any]:
         path = f"https://api.avrae.io/workshop/collection/{collection_id}/full"
-        headers = {"Authorization": api_key}
-        r = requests.get(url=path, headers=headers)
+        r = self._request("get", path)
         request_data = r.json()
         if not request_data["success"]:
             raise Exception(
                 f"{collection_id} collection data grab did not succeed.\n"
                 f"{json.dumps(request_data, indent=2)}"
             )
-        return r.json()
+        return request_data
 
-    def parse_collection(self, collection_id, parser):
-        collection_data = self.get_collection_info(self.token, collection_id)["data"]
+    def parse_collection(self, collection_id: str, parser) -> None:
+        collection_data = self.get_collection_info(collection_id)["data"]
         self.alias_outputs[collection_id] = {}
         self.snippet_outputs[collection_id] = {}
         for alias in collection_data["aliases"]:

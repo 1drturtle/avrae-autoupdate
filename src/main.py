@@ -26,8 +26,10 @@ if __name__ == "__main__":
     print(" - [MAIN]: Parsing modified files.")
     modified_files = utils.parse_paths(config.modified_files)
     if len(modified_files) == 0:
-        print("No modified files detected. Quitting...")
+        print("No modified Avrae files detected. Quitting...")
         exit(0)
+
+    print(f" - [MAIN]: Found {len(modified_files)} relevant modified files.")
 
     # Step Three: Parse our collections and gvars!
     print(" - [PARSER]: Loading data from configuration files...")
@@ -35,6 +37,12 @@ if __name__ == "__main__":
     parser.load_collections()
     parser.load_gvars()
     parser.find_connected_files(modified_files)
+    if len(parser.connected_files) == 0:
+        print(
+            " - [PARSER]: No modified files matched configured collections or GVARs. Quitting..."
+        )
+        exit(0)
+
     modified_paths = set(x.path for x in parser.connected_files)
     print(" - [PARSER]: Data loaded.")
 

@@ -1,15 +1,25 @@
-import os
 import json
+import os
+from pathlib import Path
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
 
 class Config:
     def __init__(self):
-        self.token = None
-        self.collections_file_path = None
-        self.gvars_file_path = None
-        self.modified_files = None
+        self.token: Optional[str] = None
+        self.collections_file_path: Optional[str] = None
+        self.gvars_file_path: Optional[str] = None
+        self.modified_files: Optional[List[str]] = None
+
+    @staticmethod
+    def _ensure_file_exists(path_str: str, label: str) -> None:
+        path = Path(path_str)
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"{label} file not found at {path.as_posix()}. Please verify your workflow inputs."
+            )
 
     def load_config(self):
         load_dotenv("../.env")
@@ -42,8 +52,18 @@ class Config:
                 " - [CONFIG]: Warning: GVAR file path not set. Defaulting to gvars.json"
             )
             self.gvars_file_path = "gvars.json"
-        self.modified_files = os.environ.get("INPUT_MODIFIED_FILES", None)
-        if self.modified_files is None:
+        self._ensure_file_exists(self.collections_file_path, "Collection map")
+        self._ensure_file_exists(self.gvars_file_path, "GVAR map")
+
+        modified_files_raw = os.environ.get("INPUT_MODIFIED_FILES", None)
+        if modified_files_raw is None:
             raise Exception("Modified files ENV not found. Exiting...")
-        self.modified_files = json.loads(self.modified_files)
+        try:
+            self.modified_files = json.loads(modified_files_raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                "Modified files ENV could not be parsed as JSON. Ensure the workflow passes a JSON list."
+            ) from exc
+        if not isinstance(self.modified_files, list):
+            raise ValueError("Modified files ENV must be a JSON list.")
         print(" - [CONFIG]: Config loaded.")

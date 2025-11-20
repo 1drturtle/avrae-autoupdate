@@ -1,8 +1,10 @@
 # Class that handles a majority of the file logic
-from config import Config
-from pathlib import Path
-from json import load
 from collections import namedtuple
+from json import load
+from pathlib import Path
+from typing import Dict, List
+
+from config import Config
 
 ConnectedFile = namedtuple(
     "ConnectedFile", ["type", "path", "collection", "trimmed_path"]
@@ -12,9 +14,9 @@ ConnectedFile = namedtuple(
 class Parser:
     def __init__(self, config: Config):
         self.config = config
-        self.collections = {}
-        self.gvars = {}
-        self.connected_files: list[ConnectedFile] = []
+        self.collections: Dict[Path, str] = {}
+        self.gvars: Dict[Path, str] = {}
+        self.connected_files: List[ConnectedFile] = []
 
     def load_collections(self):
         with open(self.config.collections_file_path, "r") as fp:
@@ -28,7 +30,7 @@ class Parser:
         for k, v in gvars.items():
             self.gvars[Path(k)] = v
 
-    def find_connected_files(self, modified_files):
+    def find_connected_files(self, modified_files: List[Path]):
         connected_files = []
         # first handle aliases, snippets, and docs.
         # next, handle GVARS.

@@ -1,14 +1,18 @@
-FROM python:3.11-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm
+
+WORKDIR /app
+
+# Copy dependency manifests first to leverage Docker layer caching
+ADD pyproject.toml uv.lock /app/
+
+# Install dependencies (frozen to lockfile, skipping dev extras) into .venv
+RUN uv sync --frozen --no-dev
+
+# Now bring in the rest of the source
 ADD . /app
-WORKDIR /app
 
-# We are installing a dependency here directly into our app source dir
-RUN pip install --target=/app -r requirements.txt
-
-# A distroless container image with Python and some basics like SSL certificates
-# https://github.com/GoogleContainerTools/distroless
-FROM python:3.11-slim
-COPY --from=builder /app /app
-WORKDIR /app
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 ENV PYTHONPATH /app
+
 CMD ["python", "/app/src/main.py"]
