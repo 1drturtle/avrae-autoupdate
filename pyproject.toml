@@ -1,0 +1,15 @@
+[project]
+name = "avrae-autoupdate"
+version = "2.0.0"
+description = "Tool to automatically update Avrae collections and GVARs"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv~=1.0.0",
+    "requests~=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+]
