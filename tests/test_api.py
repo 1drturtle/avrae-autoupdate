@@ -6,6 +6,8 @@ from unittest import mock
 import pytest
 
 from api import Avrae
+from config import Config
+from parsing import Parser
 from models import ParsedAlias
 
 
@@ -101,3 +103,113 @@ def test_check_and_maybe_update_skips_when_code_unchanged(tmp_path: Path):
 
     assert result == -1
     patched_post.assert_not_called()
+
+
+def test_request_retries_and_raises_on_persistent_failure(monkeypatch: pytest.MonkeyPatch):
+    config = SimpleNamespace(token="token")
+    api = Avrae(config)
+
+    responses: List[FakeResponse] = [
+        FakeResponse(500, "server error"),
+        FakeResponse(500, "server error"),
+        FakeResponse(500, "server error"),
+    ]
+
+    def fake_request(method, url, headers=None, json=None, timeout=None):
+        return responses.pop(0)
+
+    sleeps: List[int] = []
+    monkeypatch.setattr(api.session, "request", fake_request)
+    monkeypatch.setattr("api.sleep", lambda seconds: sleeps.append(seconds))
+
+    with pytest.raises(Exception):
+        api._request("get", "http://example.com")
+
+    assert sleeps == [1, 2]
+    assert len(responses) == 0
+
+
+def test_get_gvar_raises_on_unsuccessful_response(monkeypatch: pytest.MonkeyPatch):
+    api = Avrae(SimpleNamespace(token="token"))
+
+    def fake_request(method, url, headers=None, json=None, timeout=None):
+        return FakeResponse(200, json_data={"success": False, "error": "bad"})
+
+    monkeypatch.setattr(api.session, "request", fake_request)
+
+    with pytest.raises(Exception) as excinfo:
+        api.get_gvar("gvar-1")
+
+    assert "gvar-1" in str(excinfo.value)
+
+
+def test_check_and_maybe_update_gvar_missing_value(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    api = Avrae(SimpleNamespace(token="token"))
+    gvar_file = tmp_path / "one.gvar"
+    gvar_file.write_text("content")
+
+    monkeypatch.setattr(api, "get_gvar", lambda _gid: {"success": True})
+
+    with pytest.raises(Exception):
+        api.check_and_maybe_update_gvar(gvar_file, "gvar-1")
+
+
+def test_check_and_maybe_update_gvar_skips_when_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    api = Avrae(SimpleNamespace(token="token"))
+    gvar_file = tmp_path / "one.gvar"
+    gvar_file.write_text("same contents")
+
+    monkeypatch.setattr(api, "get_gvar", lambda _gid: {"value": "same contents"})
+    with mock.patch.object(api, "post_request") as patched_post:
+        result = api.check_and_maybe_update_gvar(gvar_file, "gvar-1")
+
+    assert result == -1
+    patched_post.assert_not_called()
+
+
+def test_parse_alias_recurses_subcommands(tmp_path: Path):
+    api = Avrae(SimpleNamespace(token="token"))
+    parser = Parser(Config())
+
+    collection_path = tmp_path / "collections" / "cool"
+    parser.collections = {collection_path: "col-1"}
+    api.alias_outputs["col-1"] = {}
+
+    alias_tree = {
+        "name": "root",
+        "_id": "a1",
+        "collection_id": "col-1",
+        "parent_id": None,
+        "subcommands": [
+            {
+                "name": "child",
+                "_id": "a2",
+                "collection_id": "col-1",
+                "parent_id": "a1",
+                "subcommands": [
+                    {
+                        "name": "grand",
+                        "_id": "a3",
+                        "collection_id": "col-1",
+                        "parent_id": "a2",
+                        "subcommands": [],
+                    }
+                ],
+            }
+        ],
+    }
+
+    api.parse_alias(alias_tree, parser)
+
+    # path_maps should track the hierarchical paths for each alias id
+    col_map = api.path_maps["col-1"]
+    assert col_map["a1"].endswith("/root")
+    assert col_map["a2"].endswith("/root/child")
+    assert col_map["a3"].endswith("/root/child/grand")
+
+    # alias_outputs should contain file paths for each alias node
+    outputs = api.alias_outputs["col-1"]
+    paths = {p.as_posix() for p in outputs.keys()}
+    assert collection_path.as_posix() + "/root/root.alias" in paths
+    assert collection_path.as_posix() + "/root/child/child.alias" in paths
+    assert collection_path.as_posix() + "/root/child/grand/grand.alias" in paths

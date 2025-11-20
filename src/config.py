@@ -22,13 +22,15 @@ class Config:
             )
 
     def load_config(self):
-        load_dotenv("../.env")
         print(" - [CONFIG]: Loading config...")
 
         # Allow us to be in the correct base path.
         repo_path = os.environ.get("GITHUB_WORKSPACE", None)
         if repo_path:
             os.chdir(repo_path)
+            load_dotenv(Path(repo_path) / ".env")
+        else:
+            load_dotenv(".env")
 
         # Load Avrae Token
         self.token = os.environ.get("INPUT_AVRAE_TOKEN", None)

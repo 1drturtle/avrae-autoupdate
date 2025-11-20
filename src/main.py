@@ -24,6 +24,9 @@ if __name__ == "__main__":
 
     # Step Two: Find our workspaces & check our modified files.
     print(" - [MAIN]: Parsing modified files.")
+    if config.modified_files is None:
+        print(" - [MAIN]: No modified files provided. Quitting...")
+        exit(1)
     modified_files = utils.parse_paths(config.modified_files)
     if len(modified_files) == 0:
         print("No modified Avrae files detected. Quitting...")

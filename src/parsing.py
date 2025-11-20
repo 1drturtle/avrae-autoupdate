@@ -19,13 +19,27 @@ class Parser:
         self.connected_files: List[ConnectedFile] = []
 
     def load_collections(self):
-        with open(self.config.collections_file_path, "r") as fp:
+        if self.config.collections_file_path is None:
+            raise ValueError("Collection file path is not configured.")
+        collections_path = Path(self.config.collections_file_path)
+        if not collections_path.is_file():
+            raise FileNotFoundError(
+                f"Collection map file not found at {collections_path.as_posix()}"
+            )
+        with open(collections_path, "r") as fp:
             collections = load(fp)
         for k, v in collections.items():
             self.collections[Path(k)] = v
 
     def load_gvars(self):
-        with open(self.config.gvars_file_path, "r") as fp:
+        if self.config.gvars_file_path is None:
+            raise ValueError("GVAR file path is not configured.")
+        gvars_path = Path(self.config.gvars_file_path)
+        if not gvars_path.is_file():
+            raise FileNotFoundError(
+                f"GVAR map file not found at {gvars_path.as_posix()}"
+            )
+        with open(gvars_path, "r") as fp:
             gvars = load(fp)
         for k, v in gvars.items():
             self.gvars[Path(k)] = v

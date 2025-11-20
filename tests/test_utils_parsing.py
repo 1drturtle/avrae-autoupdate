@@ -71,3 +71,35 @@ def test_parser_ignores_files_outside_configured_collections(tmp_path: Path):
     parser.find_connected_files([other_alias])
 
     assert parser.connected_files == []
+
+
+def test_parser_handles_nested_aliases_and_snippets(tmp_path: Path):
+    collections_dir = tmp_path / "collections" / "cool-collection"
+    nested_alias = collections_dir / "parent" / "child.alias"
+    nested_alias.parent.mkdir(parents=True)
+    nested_alias.write_text("code")
+    snippet_file = collections_dir / "spell.snippet"
+    snippet_file.write_text("snippet code")
+
+    collections_json = tmp_path / "collections.json"
+    collections_json.write_text(json.dumps({collections_dir.as_posix(): "col-1"}))
+    gvars_json = tmp_path / "gvars.json"
+    gvars_json.write_text(json.dumps({}))
+
+    config = Config()
+    config.collections_file_path = str(collections_json)
+    config.gvars_file_path = str(gvars_json)
+    parser = Parser(config)
+    parser.load_collections()
+    parser.load_gvars()
+
+    parser.find_connected_files([nested_alias, snippet_file])
+
+    types = {cf.type for cf in parser.connected_files}
+    assert {"alias", "snippet"} <= types
+
+    nested = next(cf for cf in parser.connected_files if cf.type == "alias")
+    assert nested.trimmed_path == Path("parent") / "child.alias"
+
+    snippet = next(cf for cf in parser.connected_files if cf.type == "snippet")
+    assert snippet.trimmed_path == Path("spell.snippet")

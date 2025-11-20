@@ -121,11 +121,23 @@ class Avrae:
 
     def get_gvar(self, gvar_id: str) -> Dict[str, Any]:
         path = f"https://api.avrae.io/customizations/gvars/{gvar_id}"
-        return self._request("get", path).json()
+        request_data = self._request("get", path).json()
+        if isinstance(request_data, dict) and request_data.get("success") is False:
+            raise Exception(
+                f"{gvar_id} GVAR data grab did not succeed.\n"
+                f"{json.dumps(request_data, indent=2)}"
+            )
+        return request_data
 
     def check_and_maybe_update_gvar(self, gvar_path: Path, gvar_id: str) -> int:
         # load existing data
-        gvar_data = self.get_gvar(gvar_id)["value"]
+        gvar_response = self.get_gvar(gvar_id)
+        try:
+            gvar_data = gvar_response["value"]
+        except KeyError as exc:
+            raise Exception(
+                f"Unexpected GVAR response for {gvar_id}\n{json.dumps(gvar_response, indent=2)}"
+            ) from exc
 
         file_path = gvar_path
         with open(file_path, "r") as fp:
