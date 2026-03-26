@@ -1,6 +1,4 @@
-# Avrae Auto-Update v2.0
-
-> Please contact me on Discord (@drturtle) if something breaks.
+# Avrae Auto-Update
 
 This project allows users to automatically update the code and documentation for snippets and aliases in Avrae collections. It also allows for the automatic updating of GVARS. See below for the required setup and instructions. Feel free to make an issue if you run into any problems!
 
