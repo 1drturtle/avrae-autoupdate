@@ -7,66 +7,42 @@
 # Full support for updating documentation
 ###
 
+import logging
+import sys
+
 from config import Config
 from parsing import Parser
 from api import Avrae
 import utils as utils
 from sys import exit
-from models import *
+
+logger = logging.getLogger("main")
+parser_logger = logging.getLogger("parser")
+api_logger = logging.getLogger("api")
 
 
-if __name__ == "__main__":
-    print("Starting Avrae Auto-Updater!")
+class TopicFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        record.topic = record.name.rsplit(".", maxsplit=1)[-1].upper()
+        return super().format(record)
 
-    # Step One: Validate our Environment & Load our config
-    config = Config()
-    config.load_config()
 
-    # Step Two: Find our workspaces & check our modified files.
-    print(" - [MAIN]: Parsing modified files.")
-    if config.modified_files is None:
-        print(" - [MAIN]: No modified files provided. Quitting...")
-        exit(1)
-    modified_files = utils.parse_paths(config.modified_files)
-    if len(modified_files) == 0:
-        print("No modified Avrae files detected. Quitting...")
-        exit(0)
+def setup_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(TopicFormatter(" - [%(topic)s]: %(message)s"))
+    logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
 
-    print(f" - [MAIN]: Found {len(modified_files)} relevant modified files.")
 
-    # Step Three: Parse our collections and gvars!
-    print(" - [PARSER]: Loading data from configuration files...")
-    parser = Parser(config)
-    parser.load_collections()
-    parser.load_gvars()
-    parser.find_connected_files(modified_files)
-    if len(parser.connected_files) == 0:
-        print(
-            " - [PARSER]: No modified files matched configured collections or GVARs. Quitting..."
-        )
-        exit(0)
-
-    modified_paths = set(x.path for x in parser.connected_files)
-    print(" - [PARSER]: Data loaded.")
-
-    # Step Four: Download Collection Data from Avrae and find relevant files to update
-
-    ## for each path, check to see if file content is up to date
-    ## also check for the markdown
-    ## if changed, push update and change active version
-    ## snippets will reside in the collection directory
-    print(" - [API]: Checking collections...")
-    avrae = Avrae(config)
+def update_collections(avrae: Avrae, parser: Parser, modified_paths: set) -> None:
+    api_logger.info("Checking collections...")
     for path, collection_id in parser.collections.items():
-        print(f" - [API]: Checking Collection {collection_id} at {path.as_posix()}")
+        api_logger.info(f"Checking Collection {collection_id} at {path.as_posix()}")
         avrae.parse_collection(collection_id, parser)
-        # update aliases
         for alias_path, parsed_alias in avrae.alias_outputs[collection_id].items():
             if alias_path in modified_paths:
                 avrae.check_and_maybe_update("alias", parsed_alias)
             if parsed_alias.docs_path in modified_paths:
                 avrae.check_and_maybe_update_docs("alias", parsed_alias)
-        # update snippets
         for snippet_path, parsed_snippet in avrae.snippet_outputs[
             collection_id
         ].items():
@@ -75,8 +51,51 @@ if __name__ == "__main__":
             if parsed_snippet.docs_path in modified_paths:
                 avrae.check_and_maybe_update_docs("snippet", parsed_snippet)
 
+
+def run() -> None:
+    logger.info("Starting Avrae Auto-Updater!")
+
+    # Step One: Validate our Environment & Load our config
+    config = Config()
+    config.load_config()
+
+    # Step Two: Find our workspaces & check our modified files.
+    logger.info("Parsing modified files.")
+    if config.modified_files is None:
+        logger.info("No modified files provided. Quitting...")
+        exit(1)
+    modified_files = utils.parse_paths(config.modified_files)
+    if len(modified_files) == 0:
+        logger.info("No modified Avrae files detected. Quitting...")
+        exit(0)
+
+    logger.info(f"Found {len(modified_files)} relevant modified files.")
+
+    # Step Three: Parse our collections and gvars!
+    parser_logger.info("Loading data from configuration files...")
+    parser = Parser(config)
+    parser.load_collections()
+    parser.load_gvars()
+    parser.find_connected_files(modified_files)
+    if len(parser.connected_files) == 0:
+        parser_logger.info(
+            "No modified files matched configured collections or GVARs. Quitting..."
+        )
+        exit(0)
+
+    modified_paths = set(x.path for x in parser.connected_files)
+    parser_logger.info("Data loaded.")
+
+    avrae = Avrae(config)
+    update_collections(avrae, parser, modified_paths)
+
     # Step Five: Update GVARs
-    print(" - [API] Checking GVARs...")
+    api_logger.info("Checking GVARs...")
     for gvar_path, gvar_id in parser.gvars.items():
         if gvar_path in modified_paths:
             avrae.check_and_maybe_update_gvar(gvar_path, gvar_id)
+
+
+if __name__ == "__main__":
+    setup_logging()
+    run()

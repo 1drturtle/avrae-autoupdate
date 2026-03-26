@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger("config")
 
 
 class Config:
@@ -22,7 +25,7 @@ class Config:
             )
 
     def load_config(self):
-        print(" - [CONFIG]: Loading config...")
+        logger.info("Loading config...")
 
         # Allow us to be in the correct base path.
         repo_path = os.environ.get("GITHUB_WORKSPACE", None)
@@ -39,19 +42,19 @@ class Config:
                 "Avrae token not found. Please see README.md in the project repo for help with setup. Exiting..."
             )
 
-        print(" - [CONFIG]: Loading file paths...")
+        logger.info("Loading file paths...")
         self.collections_file_path = os.environ.get(
             "INPUT_COLLECTIONS_ID_FILE_NAME", None
         )
         if self.collections_file_path is None:
-            print(
-                " - [CONFIG]: Warning: Collection file path not set. Defaulting to collections.json"
+            logger.warning(
+                "Collection file path not set. Defaulting to collections.json"
             )
             self.collections_file_path = "collections.json"
         self.gvars_file_path = os.environ.get("INPUT_GVARS_ID_FILE_NAME", None)
         if self.gvars_file_path is None:
-            print(
-                " - [CONFIG]: Warning: GVAR file path not set. Defaulting to gvars.json"
+            logger.warning(
+                "GVAR file path not set. Defaulting to gvars.json"
             )
             self.gvars_file_path = "gvars.json"
         self._ensure_file_exists(self.collections_file_path, "Collection map")
@@ -68,4 +71,4 @@ class Config:
             ) from exc
         if not isinstance(self.modified_files, list):
             raise ValueError("Modified files ENV must be a JSON list.")
-        print(" - [CONFIG]: Config loaded.")
+        logger.info("Config loaded.")

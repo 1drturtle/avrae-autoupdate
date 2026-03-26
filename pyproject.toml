@@ -1,6 +1,6 @@
 [project]
 name = "avrae-autoupdate"
-version = "2.0.0"
+version = "3.0.0"
 description = "Tool to automatically update Avrae collections and GVARs"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -11,5 +11,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.408",
     "pytest>=9.0.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.7",
 ]
