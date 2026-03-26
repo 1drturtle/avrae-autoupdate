@@ -16,9 +16,15 @@ class Avrae:
     def __init__(self, config):
         self.token = config.token
         self.session: Session = Session()
-        self.path_maps: Dict[str, Dict[str, str]] = {}  # {collection_id: PathMap} PathMap: {alias_id: Path}
-        self.alias_outputs: Dict[str, Dict[Path, ParsedAlias]] = {}  # collection_id: {alias_path: ParsedAlias}
-        self.snippet_outputs: Dict[str, Dict[Path, ParsedSnippet]] = {}  # collection_id: {snippet_path: ParsedSnippet}
+        self.path_maps: Dict[
+            str, Dict[str, str]
+        ] = {}  # {collection_id: PathMap} PathMap: {alias_id: Path}
+        self.alias_outputs: Dict[
+            str, Dict[Path, ParsedAlias]
+        ] = {}  # collection_id: {alias_path: ParsedAlias}
+        self.snippet_outputs: Dict[
+            str, Dict[Path, ParsedSnippet]
+        ] = {}  # collection_id: {snippet_path: ParsedSnippet}
         self.objects: Dict[str, Dict[str, Any]] = {}  # {object_id: data}
 
     def _request(
@@ -49,7 +55,9 @@ class Avrae:
                 if attempt == 2:
                     break
                 sleep_seconds = 2**attempt
-                print(f" - [API]: Request failed ({exc}); retrying in {sleep_seconds}s...")
+                print(
+                    f" - [API]: Request failed ({exc}); retrying in {sleep_seconds}s..."
+                )
                 sleep(sleep_seconds)
         if last_exc:
             raise last_exc
@@ -62,6 +70,10 @@ class Avrae:
         except ValueError as exc:
             raise ValueError(f"Non-JSON response from {path}: {r.text}") from exc
 
+    def post_request_str(self, path: str, request_data: Dict[str, Any]) -> str:
+        r = self._request("post", path, request_data)
+        return r.text
+
     def put_request(self, path: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
         r = self._request("put", path, request_data)
         return r.json()
@@ -70,7 +82,9 @@ class Avrae:
         r = self._request("patch", path, request_data)
         return r.json()
 
-    def check_and_maybe_update(self, type_: str, parsed_data: ParsedAlias | ParsedSnippet) -> int:
+    def check_and_maybe_update(
+        self, type_: str, parsed_data: ParsedAlias | ParsedSnippet
+    ) -> int:
         # load our file content and check for differences
         file_path = parsed_data.file_path
         with open(file_path, "r") as fp:
@@ -100,7 +114,9 @@ class Avrae:
         print(f" - [API]:\tCode Version: {code_version}")
         return 0
 
-    def check_and_maybe_update_docs(self, type_: str, parsed_data: ParsedAlias | ParsedSnippet) -> int:
+    def check_and_maybe_update_docs(
+        self, type_: str, parsed_data: ParsedAlias | ParsedSnippet
+    ) -> int:
         # load our file content and check for differences
         file_path = parsed_data.docs_path
         with open(file_path, "r") as fp:
@@ -146,14 +162,12 @@ class Avrae:
                 return -1
         # update file via POST request
         print(f" - [API]: Updating GVAR {gvar_id} at {gvar_path.as_posix()}")
-        update_response = self.post_request(
+        update_response = self.post_request_str(
             f"https://api.avrae.io/customizations/gvars/{gvar_id}",
             {"value": file_contents},
         )
-        if isinstance(update_response, dict) and update_response.get("success") is False:
-            raise Exception(
-                f"Could not update GVAR {gvar_id}\n{json.dumps(update_response, indent=2)}"
-            )
+        if update_response != "Gvar updated.":
+            raise Exception(f"Could not update GVAR {gvar_id}\n{update_response}")
         return 0
 
     def get_collection_info(self, collection_id: str) -> Dict[str, Any]:
@@ -185,9 +199,9 @@ class Avrae:
                 Path(collection_path + "/" + snippet["name"] + ".snippet"),
                 Path(collection_path + "/" + snippet["name"] + ".md"),
             )
-            self.snippet_outputs[collection_id][
-                parsed_snippet.file_path
-            ] = parsed_snippet
+            self.snippet_outputs[collection_id][parsed_snippet.file_path] = (
+                parsed_snippet
+            )
 
     def parse_alias(self, alias_data, parser):
         # Recursive function to map paths for aliases

@@ -160,11 +160,47 @@ def test_check_and_maybe_update_gvar_skips_when_unchanged(monkeypatch: pytest.Mo
     gvar_file.write_text("same contents")
 
     monkeypatch.setattr(api, "get_gvar", lambda _gid: {"value": "same contents"})
-    with mock.patch.object(api, "post_request") as patched_post:
+    with mock.patch.object(api, "post_request_str") as patched_post:
         result = api.check_and_maybe_update_gvar(gvar_file, "gvar-1")
 
     assert result == -1
     patched_post.assert_not_called()
+
+
+def test_check_and_maybe_update_gvar_posts_string_update_response(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    api = Avrae(SimpleNamespace(token="token"))
+    gvar_file = tmp_path / "one.gvar"
+    gvar_file.write_text("new contents")
+
+    monkeypatch.setattr(api, "get_gvar", lambda _gid: {"value": "old contents"})
+    with mock.patch.object(
+        api, "post_request_str", return_value="Gvar updated."
+    ) as patched_post:
+        result = api.check_and_maybe_update_gvar(gvar_file, "gvar-1")
+
+    assert result == 0
+    patched_post.assert_called_once_with(
+        "https://api.avrae.io/customizations/gvars/gvar-1",
+        {"value": "new contents"},
+    )
+
+
+def test_check_and_maybe_update_gvar_raises_on_unexpected_update_response(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    api = Avrae(SimpleNamespace(token="token"))
+    gvar_file = tmp_path / "one.gvar"
+    gvar_file.write_text("new contents")
+
+    monkeypatch.setattr(api, "get_gvar", lambda _gid: {"value": "old contents"})
+    monkeypatch.setattr(api, "post_request_str", lambda *_args, **_kwargs: "bad")
+
+    with pytest.raises(Exception) as excinfo:
+        api.check_and_maybe_update_gvar(gvar_file, "gvar-1")
+
+    assert "Could not update GVAR gvar-1" in str(excinfo.value)
 
 
 def test_parse_alias_recurses_subcommands(tmp_path: Path):
