@@ -1,14 +1,20 @@
 # Class that handles a majority of the file logic
-from collections import namedtuple
+from dataclasses import dataclass
 from json import load
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from config import Config
 
-ConnectedFile = namedtuple(
-    "ConnectedFile", ["type", "path", "collection", "trimmed_path"]
-)
+
+@dataclass(frozen=True, slots=True)
+class ConnectedFile:
+    """A modified file mapped back to the configured Avrae resources."""
+
+    type: str
+    path: Path
+    collection: Optional[dict[str, str | Path]]
+    trimmed_path: Optional[Path]
 
 
 class Parser:
@@ -23,9 +29,7 @@ class Parser:
             raise ValueError("Collection file path is not configured.")
         collections_path = Path(self.config.collections_file_path)
         if not collections_path.is_file():
-            raise FileNotFoundError(
-                f"Collection map file not found at {collections_path.as_posix()}"
-            )
+            raise FileNotFoundError(f"Collection map file not found at {collections_path.as_posix()}")
         with open(collections_path, "r") as fp:
             collections = load(fp)
         for k, v in collections.items():
@@ -36,9 +40,7 @@ class Parser:
             raise ValueError("GVAR file path is not configured.")
         gvars_path = Path(self.config.gvars_file_path)
         if not gvars_path.is_file():
-            raise FileNotFoundError(
-                f"GVAR map file not found at {gvars_path.as_posix()}"
-            )
+            raise FileNotFoundError(f"GVAR map file not found at {gvars_path.as_posix()}")
         with open(gvars_path, "r") as fp:
             gvars = load(fp)
         for k, v in gvars.items():
@@ -55,9 +57,7 @@ class Parser:
                     connected_files.append(ConnectedFile("gvar", file, None, None))
                 continue
             for path, _id in self.collections.items():
-                file_parents = list(file.parents)[
-                    :-2
-                ]  # we remove the base directory and `.`
+                file_parents = list(file.parents)[:-2]  # we remove the base directory and `.`
                 if path in file_parents:
                     # we found our collection for this file.
                     # Let's connect them

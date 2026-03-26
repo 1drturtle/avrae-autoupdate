@@ -21,4 +21,3 @@ def test_parse_paths_filters_and_converts_to_path_instances():
     result = parse_paths(paths)
 
     assert result == [Path("spell.alias"), Path("note.md"), Path("tool.snippet")]
-

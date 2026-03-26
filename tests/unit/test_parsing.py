@@ -128,4 +128,3 @@ def test_find_connected_files_ignores_unknown_gvars(tmp_path: Path):
     parser.find_connected_files([tmp_path / "gvars" / "missing.gvar"])
 
     assert parser.connected_files == []
-

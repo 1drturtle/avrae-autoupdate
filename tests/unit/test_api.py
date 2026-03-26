@@ -101,9 +101,7 @@ def test_post_request_raises_for_non_json_response(api: Avrae):
         "request_json",
         side_effect=AvraeResponseError("Non-JSON response from http://example.com"),
     ):
-        with pytest.raises(
-            AvraeResponseError, match="Non-JSON response from http://example.com"
-        ):
+        with pytest.raises(AvraeResponseError, match="Non-JSON response from http://example.com"):
             api.post_request("http://example.com", {"value": 1})
 
 
@@ -116,9 +114,7 @@ def test_post_request_str_returns_response_text(api: Avrae):
 
 
 def test_put_request_returns_response_json(api: Avrae):
-    with patch.object(
-        api.client, "request_json", return_value={"success": True}
-    ) as mock_request:
+    with patch.object(api.client, "request_json", return_value={"success": True}) as mock_request:
         result = api.put_request("http://example.com", {"value": 1})
 
     assert result == {"success": True}
@@ -126,9 +122,7 @@ def test_put_request_returns_response_json(api: Avrae):
 
 
 def test_patch_request_returns_response_json(api: Avrae):
-    with patch.object(
-        api.client, "request_json", return_value={"success": True}
-    ) as mock_request:
+    with patch.object(api.client, "request_json", return_value={"success": True}) as mock_request:
         result = api.patch_request("http://example.com", {"value": 1})
 
     assert result == {"success": True}
@@ -271,9 +265,7 @@ def test_check_and_maybe_update_docs_updates_changed_docs(api: Avrae):
 
     with (
         patch.object(api, "_read_text", return_value="new docs"),
-        patch.object(
-            api, "patch_request", return_value={"success": True}
-        ) as mock_patch,
+        patch.object(api, "patch_request", return_value={"success": True}) as mock_patch,
     ):
         result = api.check_and_maybe_update_docs("alias", parsed_alias)
 
@@ -302,21 +294,15 @@ def test_check_and_maybe_update_docs_raises_when_patch_fails(api: Avrae):
 
 
 def test_get_gvar_returns_payload(api: Avrae):
-    with patch.object(
-        api.client, "request_json", return_value={"value": "data"}
-    ) as mock_request:
+    with patch.object(api.client, "request_json", return_value={"value": "data"}) as mock_request:
         assert api.get_gvar("g1") == {"value": "data"}
 
-    mock_request.assert_called_once_with(
-        "get", "https://api.avrae.io/customizations/gvars/g1"
-    )
+    mock_request.assert_called_once_with("get", "https://api.avrae.io/customizations/gvars/g1")
 
 
 def test_get_gvar_raises_for_unsuccessful_payload(api: Avrae):
     with patch.object(api.client, "request_json", return_value={"success": False}):
-        with pytest.raises(
-            AvraeResponseError, match="g1 GVAR data grab did not succeed"
-        ):
+        with pytest.raises(AvraeResponseError, match="g1 GVAR data grab did not succeed"):
             api.get_gvar("g1")
 
 
@@ -338,9 +324,7 @@ def test_check_and_maybe_update_gvar_updates_changed_value(api: Avrae):
     with (
         patch.object(api, "get_gvar", return_value={"value": "old"}),
         patch.object(api, "_read_text", return_value="new"),
-        patch.object(
-            api, "post_request_str", return_value="Gvar updated."
-        ) as mock_post,
+        patch.object(api, "post_request_str", return_value="Gvar updated.") as mock_post,
     ):
         result = api.check_and_maybe_update_gvar(Path("one.gvar"), "g1")
 
@@ -375,16 +359,12 @@ def test_get_collection_info_returns_data(api: Avrae):
     ) as mock_request:
         assert api.get_collection_info("col-1") == {"success": True, "data": {}}
 
-    mock_request.assert_called_once_with(
-        "get", "https://api.avrae.io/workshop/collection/col-1/full"
-    )
+    mock_request.assert_called_once_with("get", "https://api.avrae.io/workshop/collection/col-1/full")
 
 
 def test_get_collection_info_raises_for_unsuccessful_payload(api: Avrae):
     with patch.object(api.client, "request_json", return_value={"success": False}):
-        with pytest.raises(
-            AvraeResponseError, match="col-1 collection data grab did not succeed"
-        ):
+        with pytest.raises(AvraeResponseError, match="col-1 collection data grab did not succeed"):
             api.get_collection_info("col-1")
 
 
@@ -404,10 +384,10 @@ def test_parse_collection_creates_alias_and_snippet_outputs(api: Avrae):
         "get_collection_info",
         return_value={"data": {"aliases": [alias], "snippets": [snippet]}},
     ):
-        api.parse_collection("col-1", parser)
+        alias_outputs, snippet_outputs = api.parse_collection("col-1", parser)  # type: ignore[arg-type]
 
-    assert Path("collections/cool/root/root.alias") in api.alias_outputs["col-1"]
-    assert Path("collections/cool/spell.snippet") in api.snippet_outputs["col-1"]
+    assert Path("collections/cool/root/root.alias") in alias_outputs
+    assert Path("collections/cool/spell.snippet") in snippet_outputs
 
 
 def test_build_collection_outputs_creates_root_and_nested_alias_paths():
@@ -430,7 +410,7 @@ def test_build_collection_outputs_creates_root_and_nested_alias_paths():
 
     alias_outputs, snippet_outputs = build_collection_outputs(
         "col-1",
-        parser,
+        parser,  # type: ignore[arg-type]
         {"aliases": [alias_tree], "snippets": []},
     )
 
@@ -444,14 +424,12 @@ def test_build_collection_outputs_creates_snippet_paths():
 
     _, snippet_outputs = build_collection_outputs(
         "col-1",
-        parser,
+        parser,  # type: ignore[arg-type]
         {"aliases": [], "snippets": [{"name": "spell", "_id": "s1"}]},
     )
 
     assert Path("collections/cool/spell.snippet") in snippet_outputs
-    assert snippet_outputs[Path("collections/cool/spell.snippet")].docs_path == Path(
-        "collections/cool/spell.md"
-    )
+    assert snippet_outputs[Path("collections/cool/spell.snippet")].docs_path == Path("collections/cool/spell.md")
 
 
 def test_read_text_reads_file_contents(tmp_path: Path):
@@ -464,11 +442,11 @@ def test_read_text_reads_file_contents(tmp_path: Path):
 def test_get_collection_path_returns_matching_collection_path():
     parser = SimpleNamespace(collections={Path("collections/cool"): "col-1"})
 
-    assert get_collection_path(parser, "col-1") == Path("collections/cool")
+    assert get_collection_path(parser, "col-1") == Path("collections/cool")  # type: ignore[arg-type]
 
 
 def test_get_collection_path_raises_for_unknown_collection_id():
     parser = SimpleNamespace(collections={Path("collections/cool"): "col-1"})
 
     with pytest.raises(AvraeResponseError, match="Unknown collection id: missing"):
-        get_collection_path(parser, "missing")
+        get_collection_path(parser, "missing")  # type: ignore[arg-type]

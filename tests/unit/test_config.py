@@ -129,4 +129,3 @@ def test_load_config_raises_when_modified_files_is_not_a_list(tmp_path: Path, mo
             config.load_config()
         finally:
             monkeypatch.chdir(original_cwd)
-

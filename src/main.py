@@ -34,18 +34,20 @@ def setup_logging() -> None:
 
 
 def update_collections(avrae: Avrae, parser: Parser, modified_paths: set) -> None:
+    """Update changed aliases, snippets, and docs for each configured collection."""
     api_logger.info("Checking collections...")
     for path, collection_id in parser.collections.items():
         api_logger.info(f"Checking Collection {collection_id} at {path.as_posix()}")
-        avrae.parse_collection(collection_id, parser)
-        for alias_path, parsed_alias in avrae.alias_outputs[collection_id].items():
+        # create mapping of local file paths to collection contents
+        alias_outputs, snippet_outputs = avrae.parse_collection(collection_id, parser)
+
+        # check each file if it was modified, and update if it doesn't match the remote
+        for alias_path, parsed_alias in alias_outputs.items():
             if alias_path in modified_paths:
                 avrae.check_and_maybe_update("alias", parsed_alias)
             if parsed_alias.docs_path in modified_paths:
                 avrae.check_and_maybe_update_docs("alias", parsed_alias)
-        for snippet_path, parsed_snippet in avrae.snippet_outputs[
-            collection_id
-        ].items():
+        for snippet_path, parsed_snippet in snippet_outputs.items():
             if snippet_path in modified_paths:
                 avrae.check_and_maybe_update("snippet", parsed_snippet)
             if parsed_snippet.docs_path in modified_paths:
@@ -78,14 +80,13 @@ def run() -> None:
     parser.load_gvars()
     parser.find_connected_files(modified_files)
     if len(parser.connected_files) == 0:
-        parser_logger.info(
-            "No modified files matched configured collections or GVARs. Quitting..."
-        )
+        parser_logger.info("No modified files matched configured collections or GVARs. Quitting...")
         exit(0)
 
     modified_paths = set(x.path for x in parser.connected_files)
     parser_logger.info("Data loaded.")
 
+    # step four: update workshop
     avrae = Avrae(config)
     update_collections(avrae, parser, modified_paths)
 

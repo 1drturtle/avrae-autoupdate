@@ -34,8 +34,10 @@ def test_update_collections_updates_aliases_and_snippets():
     avrae = MagicMock()
     parsed_alias = SimpleNamespace(docs_path=Path("collections/cool/root/root.md"))
     parsed_snippet = SimpleNamespace(docs_path=Path("collections/cool/spell.md"))
-    avrae.alias_outputs = {"col-1": {Path("collections/cool/root/root.alias"): parsed_alias}}
-    avrae.snippet_outputs = {"col-1": {Path("collections/cool/spell.snippet"): parsed_snippet}}
+    avrae.parse_collection.return_value = (
+        {Path("collections/cool/root/root.alias"): parsed_alias},
+        {Path("collections/cool/spell.snippet"): parsed_snippet},
+    )
     modified_paths = {
         Path("collections/cool/root/root.alias"),
         Path("collections/cool/root/root.md"),
@@ -56,9 +58,10 @@ def test_run_exits_when_modified_files_is_none():
     config = MagicMock()
     config.modified_files = None
 
-    with patch("main.Config", return_value=config), patch(
-        "main.exit", side_effect=SystemExit(1)
-    ) as mock_exit:
+    with (
+        patch("main.Config", return_value=config),
+        patch("main.exit", side_effect=SystemExit(1)) as mock_exit,
+    ):
         with pytest.raises(SystemExit):
             main.run()
 
@@ -69,9 +72,11 @@ def test_run_exits_when_no_relevant_modified_files():
     config = MagicMock()
     config.modified_files = ["README.md"]
 
-    with patch("main.Config", return_value=config), patch(
-        "main.utils.parse_paths", return_value=[]
-    ), patch("main.exit", side_effect=SystemExit(0)) as mock_exit:
+    with (
+        patch("main.Config", return_value=config),
+        patch("main.utils.parse_paths", return_value=[]),
+        patch("main.exit", side_effect=SystemExit(0)) as mock_exit,
+    ):
         with pytest.raises(SystemExit):
             main.run()
 
@@ -84,11 +89,12 @@ def test_run_exits_when_no_connected_files():
     parser = MagicMock()
     parser.connected_files = []
 
-    with patch("main.Config", return_value=config), patch(
-        "main.utils.parse_paths", return_value=[Path("spell.alias")]
-    ), patch("main.Parser", return_value=parser), patch(
-        "main.exit", side_effect=SystemExit(0)
-    ) as mock_exit:
+    with (
+        patch("main.Config", return_value=config),
+        patch("main.utils.parse_paths", return_value=[Path("spell.alias")]),
+        patch("main.Parser", return_value=parser),
+        patch("main.exit", side_effect=SystemExit(0)) as mock_exit,
+    ):
         with pytest.raises(SystemExit):
             main.run()
 
@@ -105,23 +111,42 @@ def test_run_updates_aliases_docs_snippets_and_gvars():
     parser.collections = {Path("collections/cool"): "col-1"}
     parser.gvars = {Path("gvars/one.gvar"): "g1"}
     parser.connected_files = [
-        ConnectedFile("alias", Path("collections/cool/root/root.alias"), {"id": "col-1", "path": Path("collections/cool")}, Path("root/root.alias")),
-        ConnectedFile("md", Path("collections/cool/root/root.md"), {"id": "col-1", "path": Path("collections/cool")}, Path("root/root.md")),
-        ConnectedFile("snippet", Path("collections/cool/spell.snippet"), {"id": "col-1", "path": Path("collections/cool")}, Path("spell.snippet")),
-        ConnectedFile("md", Path("collections/cool/spell.md"), {"id": "col-1", "path": Path("collections/cool")}, Path("spell.md")),
+        ConnectedFile(
+            "alias",
+            Path("collections/cool/root/root.alias"),
+            {"id": "col-1", "path": Path("collections/cool")},
+            Path("root/root.alias"),
+        ),
+        ConnectedFile(
+            "md",
+            Path("collections/cool/root/root.md"),
+            {"id": "col-1", "path": Path("collections/cool")},
+            Path("root/root.md"),
+        ),
+        ConnectedFile(
+            "snippet",
+            Path("collections/cool/spell.snippet"),
+            {"id": "col-1", "path": Path("collections/cool")},
+            Path("spell.snippet"),
+        ),
+        ConnectedFile(
+            "md",
+            Path("collections/cool/spell.md"),
+            {"id": "col-1", "path": Path("collections/cool")},
+            Path("spell.md"),
+        ),
         ConnectedFile("gvar", Path("gvars/one.gvar"), None, None),
     ]
     avrae = MagicMock()
-    parsed_alias = SimpleNamespace(docs_path=Path("collections/cool/root/root.md"))
-    parsed_snippet = SimpleNamespace(docs_path=Path("collections/cool/spell.md"))
-    avrae.alias_outputs = {"col-1": {Path("collections/cool/root/root.alias"): parsed_alias}}
-    avrae.snippet_outputs = {"col-1": {Path("collections/cool/spell.snippet"): parsed_snippet}}
 
-    with patch("main.Config", return_value=config), patch.object(config, "load_config"), patch(
-        "main.utils.parse_paths", return_value=[Path("items")]
-    ), patch("main.Parser", return_value=parser), patch("main.Avrae", return_value=avrae), patch(
-        "main.update_collections"
-    ) as mock_update_collections:
+    with (
+        patch("main.Config", return_value=config),
+        patch.object(config, "load_config"),
+        patch("main.utils.parse_paths", return_value=[Path("items")]),
+        patch("main.Parser", return_value=parser),
+        patch("main.Avrae", return_value=avrae),
+        patch("main.update_collections") as mock_update_collections,
+    ):
         main.run()
 
     mock_update_collections.assert_called_once_with(

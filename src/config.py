@@ -20,9 +20,7 @@ class Config:
     def _ensure_file_exists(path_str: str, label: str) -> None:
         path = Path(path_str)
         if not path.is_file():
-            raise FileNotFoundError(
-                f"{label} file not found at {path.as_posix()}. Please verify your workflow inputs."
-            )
+            raise FileNotFoundError(f"{label} file not found at {path.as_posix()}. Please verify your workflow inputs.")
 
     def load_config(self):
         logger.info("Loading config...")
@@ -43,19 +41,13 @@ class Config:
             )
 
         logger.info("Loading file paths...")
-        self.collections_file_path = os.environ.get(
-            "INPUT_COLLECTIONS_ID_FILE_NAME", None
-        )
+        self.collections_file_path = os.environ.get("INPUT_COLLECTIONS_ID_FILE_NAME", None)
         if self.collections_file_path is None:
-            logger.warning(
-                "Collection file path not set. Defaulting to collections.json"
-            )
+            logger.warning("Collection file path not set. Defaulting to collections.json")
             self.collections_file_path = "collections.json"
         self.gvars_file_path = os.environ.get("INPUT_GVARS_ID_FILE_NAME", None)
         if self.gvars_file_path is None:
-            logger.warning(
-                "GVAR file path not set. Defaulting to gvars.json"
-            )
+            logger.warning("GVAR file path not set. Defaulting to gvars.json")
             self.gvars_file_path = "gvars.json"
         self._ensure_file_exists(self.collections_file_path, "Collection map")
         self._ensure_file_exists(self.gvars_file_path, "GVAR map")

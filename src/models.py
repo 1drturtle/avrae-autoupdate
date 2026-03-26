@@ -1,6 +1,24 @@
-from collections import namedtuple
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
-ParsedAlias = namedtuple(
-    "ParsedAlias", ["name", "data", "dir_path", "file_path", "docs_path"]
-)
-ParsedSnippet = namedtuple("ParsedSnippet", ["name", "data", "file_path", "docs_path"])
+
+@dataclass(frozen=True, slots=True)
+class ParsedAlias:
+    """Local representation of one Avrae alias and its file layout."""
+
+    name: str
+    data: dict[str, Any]
+    dir_path: Path
+    file_path: Path
+    docs_path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class ParsedSnippet:
+    """Local representation of one Avrae snippet and its file layout."""
+
+    name: str
+    data: dict[str, Any]
+    file_path: Path
+    docs_path: Path
